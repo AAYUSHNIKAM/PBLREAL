@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sound Frequency Detection</title>
+</head>
+<body>
+
+<h1>Sound Frequency Detection</h1>
+
+<div id="status"></div>
+
+<script>
+window.onload = function() {
+  // Check for browser support
+  window.AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!window.AudioContext) {
+    document.getElementById('status').innerHTML = 'Web Audio API is not supported in this browser';
+    return;
+  }
+
+  // Create audio context
+  var audioContext = new AudioContext();
+
+  // Get user media
+  navigator.mediaDevices.getUserMedia({audio: true})
+    .then(function(stream) {
+      // Create audio input from the stream
+      var audioInput = audioContext.createMediaStreamSource(stream);
+
+      // Create analyser node
+      var analyser = audioContext.createAnalyser();
+      analyser.fftSize = 2048; // FFT size (adjust for your needs)
+
+      // Connect the audio input to the analyser
+      audioInput.connect(analyser);
+
+      // Function to check frequency
+      function checkFrequency() {
+        // Get the frequency data
+        var bufferLength = analyser.frequencyBinCount;
+        var dataArray = new Uint8Array(bufferLength);
+        analyser.getByteFrequencyData(dataArray);
+
+        // Convert frequency data to Hz
+        var frequency = dataArray.indexOf(Math.max.apply(null, dataArray)) * audioContext.sampleRate / analyser.fftSize;
+
+        // Check if frequency is within desired range
+        if (frequency >= 500 && frequency <= 560) {
+          document.getElementById('status').innerHTML = 'Frequency detected: ' + frequency.toFixed(2) + ' Hz. I listen it.';
+        } else {
+          document.getElementById('status').innerHTML = 'No frequency detected in the desired range.';
+        }
+      }
+
+      // Set interval to check frequency
+      setInterval(checkFrequency, 1000); // Adjust interval as needed
+    })
+    .catch(function(err) {
+      document.getElementById('status').innerHTML = 'Error accessing microphone: ' + err;
+    });
+};
+</script>
+
+</body>
+</html>

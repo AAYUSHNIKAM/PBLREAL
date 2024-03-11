@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sound Frequency Detection</title>
+<!-- Add Bootstrap CSS -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
+</head>
+<body>
+
+<h1>Sound Frequency Detection</h1>
+
+<div id="status"></div>
+
+<!-- Modal for frequency detected -->
+<div class="modal fade" id="frequencyModal" tabindex="-1" role="dialog" aria-labelledby="frequencyModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="frequencyModalLabel">Frequency Detected</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="frequencyModalBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+window.onload = function() {
+    // Check for browser support
+    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!window.AudioContext) {
+        document.getElementById('status').innerHTML = 'Web Audio API is not supported in this browser';
+        return;
+    }
+
+    // Create audio context
+    var audioContext = new AudioContext();
+
+    // Get user media
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(function(stream) {
+            // Create audio input from the stream
+            var audioInput = audioContext.createMediaStreamSource(stream);
+
+            // Create analyser node
+            var analyser = audioContext.createAnalyser();
+            analyser.fftSize = 2048; // FFT size (adjust for your needs)
+
+            // Connect the audio input to the analyser
+            audioInput.connect(analyser);
+
+            // Function to check frequency
+            function checkFrequency() {
+                // Get the frequency data
+                var bufferLength = analyser.frequencyBinCount;
+                var dataArray = new Uint8Array(bufferLength);
+                analyser.getByteFrequencyData(dataArray);
+
+                // Find the dominant frequency
+                var maxFrequency = Math.max.apply(null, dataArray);
+                var maxFrequencyIndex = dataArray.indexOf(maxFrequency);
+                var frequency = maxFrequencyIndex * audioContext.sampleRate / analyser.fftSize;
+
+                // Check if frequency is within desired range
+                if (frequency >= 500 && frequency <= 550) {
+                    // Display modal with frequency information
+                    document.getElementById('frequencyModalBody').innerHTML = 'Frequency detected in the range: ' + frequency.toFixed(2) + ' Hz';
+                    $('#frequencyModal').modal('show');
+                } else {
+                    document.getElementById('status').innerHTML = 'No frequency detected in the desired range.';
+                }
+            }
+
+            // Start frequency check
+            setInterval(checkFrequency, 100); // Check frequency every 100 milliseconds
+        })
+        .catch(function(err) {
+            document.getElementById('status').innerHTML = 'Error accessing microphone: ' + err;
+        });
+};
+</script>
+
+<!-- Add Bootstrap JS and jQuery -->
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Real-Time Frequency Monitoring</title>
+</head>
+<body>
+
+<h1>Real-Time Frequency Monitoring</h1>
+
+<div id="frequencyDisplay">Frequency: <span id="frequencyValue">0</span> Hz</div>
+
+<script>
+window.onload = function() {
+    // Check for browser support
+    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!window.AudioContext) {
+        document.getElementById('frequencyDisplay').innerHTML = 'Web Audio API is not supported in this browser';
+        return;
+    }
+
+    // Create audio context
+    var audioContext = new AudioContext();
+
+    // Get user media
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(function(stream) {
+            // Create audio input from the stream
+            var audioInput = audioContext.createMediaStreamSource(stream);
+
+            // Create analyser node
+            var analyser = audioContext.createAnalyser();
+            analyser.fftSize = 2048; // FFT size (adjust for your needs)
+
+            // Connect the audio input to the analyser
+            audioInput.connect(analyser);
+
+            // Function to update frequency display
+            function updateFrequency() {
+                // Get the frequency data
+                var bufferLength = analyser.frequencyBinCount;
+                var dataArray = new Uint8Array(bufferLength);
+                analyser.getByteFrequencyData(dataArray);
+
+                // Find the dominant frequency
+                var maxFrequencyIndex = dataArray.indexOf(Math.max.apply(null, dataArray));
+                var frequency = maxFrequencyIndex * audioContext.sampleRate / analyser.fftSize;
+
+                // Update frequency display
+                document.getElementById('frequencyValue').textContent = frequency.toFixed(2);
+            }
+
+            // Update frequency display continuously
+            setInterval(updateFrequency, 100); // Update every 100 milliseconds
+        })
+        .catch(function(err) {
+            document.getElementById('frequencyDisplay').innerHTML = 'Error accessing microphone: ' + err;
+        });
+};
+</script>
+
+</body>
+</html>
